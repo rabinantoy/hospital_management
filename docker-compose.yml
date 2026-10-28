@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carepulse-hms-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://carepulse_admin:SecurePass2026@postgres:5432/carepulse_db?schema=public
+      - JWT_SECRET=super_secret_jwt_key_carepulse_2026
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - carepulse-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: carepulse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: carepulse_admin
+      POSTGRES_PASSWORD: SecurePass2026
+      POSTGRES_DB: carepulse_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carepulse_admin -d carepulse_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - carepulse-network
+
+networks:
+  carepulse-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
